@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>BCM Admin</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--surface:#111118;--surface2:#16161f;--border:#1e1e2e;
+  --accent:#7c3aed;--accent2:#a78bfa;--green:#10b981;--yellow:#f59e0b;
+  --red:#ef4444;--blue:#3b82f6;--text:#e2e8f0;--muted:#64748b;
+  --mono:'Space Mono',monospace;--sans:'Space Grotesk',sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── LOGIN ── */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem}
+.login-wrap{width:100%;max-width:400px}
+.login-logo{font-family:var(--mono);font-size:1rem;color:var(--accent2);letter-spacing:.15em;text-align:center;margin-bottom:.4rem}
+.login-title{text-align:center;font-size:1.5rem;font-weight:700;margin-bottom:.25rem}
+.login-sub{text-align:center;color:var(--muted);font-size:.85rem;margin-bottom:2rem}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem}
+label{display:block;font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem}
+input[type=password],input[type=text]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:1rem;padding:.75rem 1rem;outline:none;transition:border-color .2s}
+input:focus{border-color:var(--accent)}
+.btn-primary{width:100%;margin-top:1.25rem;padding:.8rem;background:var(--accent);color:#fff;font-family:var(--sans);font-size:.95rem;font-weight:600;border:none;border-radius:8px;cursor:pointer;transition:opacity .2s}
+.btn-primary:hover{opacity:.85}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.err{margin-top:.75rem;color:var(--red);font-size:.85rem;text-align:center}
+
+/* ── LAYOUT ── */
+#app{display:none;min-height:100vh}
+.sidebar{position:fixed;top:0;left:0;width:220px;height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:1.5rem 0;z-index:100}
+.sb-logo{font-family:var(--mono);font-size:.85rem;color:var(--accent2);letter-spacing:.15em;padding:0 1.5rem;margin-bottom:2rem}
+.sb-nav{flex:1}
+.sb-item{display:flex;align-items:center;gap:.75rem;padding:.65rem 1.5rem;font-size:.88rem;font-weight:500;color:var(--muted);cursor:pointer;transition:background .15s,color .15s;border-left:2px solid transparent}
+.sb-item:hover{background:rgba(124,58,237,.08);color:var(--text)}
+.sb-item.active{color:var(--accent2);border-left-color:var(--accent2);background:rgba(124,58,237,.1)}
+.sb-item .icon{font-size:1rem;width:20px;text-align:center}
+.sb-bottom{padding:1rem 1.5rem;border-top:1px solid var(--border)}
+.logout-btn{width:100%;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--sans);font-size:.8rem;padding:.5rem;border-radius:6px;cursor:pointer;transition:border-color .2s,color .2s}
+.logout-btn:hover{border-color:var(--red);color:var(--red)}
+.main{margin-left:220px;padding:2rem;min-height:100vh}
+.page{display:none}
+.page.active{display:block}
+.page-title{font-size:1.4rem;font-weight:700;margin-bottom:.25rem}
+.page-sub{color:var(--muted);font-size:.85rem;margin-bottom:1.75rem}
+
+/* ── STATS GRID ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.75rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.sc-purple::before{background:var(--accent)}
+.sc-green::before{background:var(--green)}
+.sc-yellow::before{background:var(--yellow)}
+.sc-red::before{background:var(--red)}
+.sc-blue::before{background:var(--blue)}
+.sc-muted::before{background:var(--muted)}
+.stat-label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.6rem}
+.stat-value{font-family:var(--mono);font-size:2rem;font-weight:700;line-height:1}
+.sc-purple .stat-value{color:var(--accent2)}
+.sc-green .stat-value{color:var(--green)}
+.sc-yellow .stat-value{color:var(--yellow)}
+.sc-red .stat-value{color:var(--red)}
+.sc-blue .stat-value{color:var(--blue)}
+.sc-muted .stat-value{color:var(--muted)}
+
+/* ── PLATFORM SWITCH ── */
+.platform-banner{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;gap:1rem;flex-wrap:wrap}
+.platform-info h3{font-size:1rem;font-weight:600;margin-bottom:.2rem}
+.platform-info p{font-size:.8rem;color:var(--muted)}
+.toggle-wrap{display:flex;align-items:center;gap:.75rem}
+.toggle-label{font-size:.85rem;color:var(--muted)}
+.toggle{position:relative;width:52px;height:28px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:#2a2a3a;border-radius:28px;transition:.3s}
+.slider::before{content:'';position:absolute;height:20px;width:20px;left:4px;bottom:4px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.slider{background:var(--green)}
+.toggle input:checked+.slider::before{transform:translateX(24px)}
+.toggle input.offline-toggle:checked+.slider{background:var(--red)}
+
+/* ── TABLE ── */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.5rem}
+.table-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border);gap:.75rem;flex-wrap:wrap}
+.table-header h3{font-size:.9rem;font-weight:600}
+.search-input{background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--sans);font-size:.85rem;padding:.4rem .75rem;outline:none;width:220px;transition:border-color .2s}
+.search-input:focus{border-color:var(--accent)}
+table{width:100%;border-collapse:collapse}
+thead{background:#0d0d14}
+th{text-align:left;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:.75rem 1.1rem;border-bottom:1px solid var(--border)}
+td{padding:.8rem 1.1rem;font-size:.88rem;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(124,58,237,.04)}
+.mono{font-family:var(--mono);font-size:.82rem}
+.tag{display:inline-block;padding:.15rem .5rem;border-radius:4px;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.tag-green{background:rgba(16,185,129,.15);color:var(--green)}
+.tag-red{background:rgba(239,68,68,.15);color:var(--red)}
+.tag-yellow{background:rgba(245,158,11,.15);color:var(--yellow)}
+.tag-blue{background:rgba(59,130,246,.15);color:var(--blue)}
+.tag-muted{background:rgba(100,116,139,.15);color:var(--muted)}
+.empty-row td{text-align:center;color:var(--muted);padding:2.5rem}
+
+/* ── ACTION BUTTONS ── */
+.action-btns{display:flex;gap:.4rem;flex-wrap:wrap}
+.btn-sm{padding:.3rem .6rem;font-size:.75rem;font-weight:600;border-radius:5px;border:none;cursor:pointer;font-family:var(--sans);transition:opacity .2s}
+.btn-sm:hover{opacity:.8}
+.btn-ban{background:rgba(239,68,68,.15);color:var(--red)}
+.btn-unban{background:rgba(16,185,129,.15);color:var(--green)}
+.btn-offline{background:rgba(245,158,11,.15);color:var(--yellow)}
+.btn-online{background:rgba(59,130,246,.15);color:var(--blue)}
+.btn-delete{background:rgba(239,68,68,.08);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.btn-view{background:rgba(124,58,237,.15);color:var(--accent2)}
+
+/* ── CHART ── */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.75rem}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
+.chart-title{font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem}
+.bar-chart{display:flex;align-items:flex-end;gap:3px;height:80px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bar{width:100%;border-radius:3px 3px 0 0;min-height:2px;transition:height .4s}
+.bar-label{font-family:var(--mono);font-size:.55rem;color:var(--muted);white-space:nowrap}
+.donut-wrap{display:flex;align-items:center;gap:1.5rem}
+.donut-legend{display:flex;flex-direction:column;gap:.5rem}
+.legend-item{display:flex;align-items:center;gap:.5rem;font-size:.8rem}
+.legend-dot{width:10px;height:10px;border-radius:50%}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:100%;max-width:560px;max-height:80vh;overflow-y:auto}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border)}
+.modal-head h3{font-size:1rem;font-weight:600}
+.modal-close{background:transparent;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;line-height:1}
+.modal-body{padding:1.5rem}
+
+/* ── SECURITY ── */
+.attempts-list{display:flex;flex-direction:column;gap:.5rem}
+.attempt-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+.attempt-id{font-family:var(--mono);font-size:.82rem;color:var(--accent2)}
+.attempt-meta{font-size:.75rem;color:var(--muted)}
+
+/* ── SETTINGS ── */
+.settings-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1rem}
+.settings-card h3{font-size:.95rem;font-weight:600;margin-bottom:.5rem}
+.settings-card p{font-size:.82rem;color:var(--muted);margin-bottom:1rem}
+.input-row{display:flex;gap:.75rem;align-items:flex-end}
+.input-row input{flex:1}
+.btn-save{padding:.7rem 1.25rem;background:var(--accent);color:#fff;font-family:var(--sans);font-size:.85rem;font-weight:600;border:none;border-radius:8px;cursor:pointer;white-space:nowrap;transition:opacity .2s}
+.btn-save:hover{opacity:.85}
+.success-note{margin-top:.75rem;color:var(--green);font-size:.82rem}
+.warn-note{margin-top:.75rem;color:var(--yellow);font-size:.82rem}
+
+.refresh-row{display:flex;justify-content:flex-end;margin-bottom:.75rem;gap:.75rem;align-items:center}
+.refresh-btn{background:transparent;border:1px solid var(--border);color:var(--accent2);font-family:var(--sans);font-size:.78rem;padding:.35rem .8rem;border-radius:6px;cursor:pointer}
+.refresh-btn:hover{border-color:var(--accent)}
+.last-upd{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+
+@media(max-width:700px){
+  .sidebar{display:none}
+  .main{margin-left:0;padding:1rem}
+  .chart-grid{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-wrap">
+    <div class="login-logo">BCM</div>
+    <h1 class="login-title">Admin Dashboard</h1>
+    <p class="login-sub">Enter your admin password to continue</p>
+    <div class="login-box">
+      <label for="pwd">Password</label>
+      <input type="password" id="pwd" placeholder="••••••••••" autofocus/>
+      <button class="btn-primary" id="login-btn" onclick="doLogin()">Sign in</button>
+      <div class="err" id="login-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="sidebar">
+    <div class="sb-logo">BCM / ADMIN</div>
+    <nav class="sb-nav">
+      <div class="sb-item active" onclick="showPage('overview')" id="nav-overview"><span class="icon">📊</span> Overview</div>
+      <div class="sb-item" onclick="showPage('users')" id="nav-users"><span class="icon">👥</span> Users</div>
+      <div class="sb-item" onclick="showPage('messages')" id="nav-messages"><span class="icon">💬</span> Messages</div>
+      <div class="sb-item" onclick="showPage('activity')" id="nav-activity"><span class="icon">📈</span> Activity</div>
+      <div class="sb-item" onclick="showPage('security')" id="nav-security"><span class="icon">🔒</span> Security</div>
+      <div class="sb-item" onclick="showPage('settings')" id="nav-settings"><span class="icon">⚙️</span> Settings</div>
+    </nav>
+    <div class="sb-bottom">
+      <button class="logout-btn" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- OVERVIEW -->
+    <div class="page active" id="page-overview">
+      <div class="page-title">Overview</div>
+      <div class="page-sub">Your platform at a glance</div>
+
+      <div class="platform-banner" id="platform-banner">
+        <div class="platform-info">
+          <h3>Platform Status</h3>
+          <p id="platform-status-text">Loading…</p>
+        </div>
+        <div class="toggle-wrap">
+          <span class="toggle-label" id="platform-toggle-label">Online</span>
+          <label class="toggle">
+            <input type="checkbox" class="offline-toggle" id="platform-toggle" onchange="togglePlatform()"/>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card sc-purple"><div class="stat-label">Total Users</div><div class="stat-value" id="ov-users">—</div></div>
+        <div class="stat-card sc-green"><div class="stat-label">Total Messages</div><div class="stat-value" id="ov-messages">—</div></div>
+        <div class="stat-card sc-yellow"><div class="stat-label">Active Messages</div><div class="stat-value" id="ov-active">—</div></div>
+        <div class="stat-card sc-red"><div class="stat-label">Redemptions</div><div class="stat-value" id="ov-redeemed">—</div></div>
+        <div class="stat-card sc-red"><div class="stat-label">Banned Users</div><div class="stat-value" id="ov-banned">—</div></div>
+        <div class="stat-card sc-muted"><div class="stat-label">Failed Logins</div><div class="stat-value" id="ov-failed">—</div></div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Signups — Last 14 Days</div>
+          <div class="bar-chart" id="chart-signups"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Message Types</div>
+          <div class="donut-wrap">
+            <canvas id="donut-canvas" width="90" height="90"></canvas>
+            <div class="donut-legend" id="donut-legend"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div class="page" id="page-users">
+      <div class="page-title">Users</div>
+      <div class="page-sub">Manage all registered accounts</div>
+      <div class="refresh-row">
+        <span class="last-upd" id="users-upd"></span>
+        <button class="refresh-btn" onclick="loadStats()">↻ Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>All Users (<span id="user-count">0</span>)</h3>
+          <input class="search-input" type="text" placeholder="Search login ID…" oninput="filterUsers(this.value)" id="user-search"/>
+        </div>
+        <table>
+          <thead><tr><th>#</th><th>Login ID</th><th>Signed Up</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="users-tbody"><tr class="empty-row"><td colspan="5">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div class="page" id="page-messages">
+      <div class="page-title">Messages</div>
+      <div class="page-sub">Insights on all messages across the platform</div>
+      <div class="stats-grid">
+        <div class="stat-card sc-green"><div class="stat-label">Total Messages</div><div class="stat-value" id="msg-total">—</div></div>
+        <div class="stat-card sc-yellow"><div class="stat-label">Active</div><div class="stat-value" id="msg-active">—</div></div>
+        <div class="stat-card sc-red"><div class="stat-label">Redeemed</div><div class="stat-value" id="msg-redeemed">—</div></div>
+        <div class="stat-card sc-muted"><div class="stat-label">Expired Unredeemed</div><div class="stat-value" id="msg-expired">—</div></div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card sc-blue"><div class="stat-label">Text Messages</div><div class="stat-value" id="msg-text">—</div></div>
+        <div class="stat-card sc-purple"><div class="stat-label">Image Messages</div><div class="stat-value" id="msg-image">—</div></div>
+        <div class="stat-card sc-green"><div class="stat-label">Video Messages</div><div class="stat-value" id="msg-video">—</div></div>
+      </div>
+    </div>
+
+    <!-- ACTIVITY -->
+    <div class="page" id="page-activity">
+      <div class="page-title">Activity</div>
+      <div class="page-sub">Signups and redemptions over time</div>
+      <div class="chart-card" style="margin-bottom:1rem">
+        <div class="chart-title">Signups — Last 14 Days</div>
+        <div class="bar-chart" id="chart-signups2" style="height:120px"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Redemptions — Last 14 Days</div>
+        <div class="bar-chart" id="chart-redemptions" style="height:120px"></div>
+      </div>
+    </div>
+
+    <!-- SECURITY -->
+    <div class="page" id="page-security">
+      <div class="page-title">Security</div>
+      <div class="page-sub">Recent failed login attempts</div>
+      <div class="stats-grid">
+        <div class="stat-card sc-red"><div class="stat-label">Total Failed Logins</div><div class="stat-value" id="sec-failed">—</div></div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><h3>Recent Failed Attempts (last 20)</h3></div>
+        <table>
+          <thead><tr><th>Login ID</th><th>Reason</th><th>IP</th><th>Time</th></tr></thead>
+          <tbody id="failed-tbody"><tr class="empty-row"><td colspan="4">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="page-title">Settings</div>
+      <div class="page-sub">Platform configuration</div>
+
+      <div class="settings-card">
+        <h3>Platform Switch</h3>
+        <p>Toggle the entire platform online or offline. When offline, users cannot register, login, or redeem codes.</p>
+        <div class="toggle-wrap">
+          <span class="toggle-label">Offline mode</span>
+          <label class="toggle">
+            <input type="checkbox" class="offline-toggle" id="settings-platform-toggle" onchange="togglePlatformSettings()"/>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="warn-note" id="settings-platform-note" style="display:none">⚠️ Platform is currently OFFLINE — users cannot access it.</div>
+      </div>
+
+      <div class="settings-card">
+        <h3>Change Admin Password</h3>
+        <p>Set a new admin password. After saving, update your <strong>ADMIN_PASSWORD</strong> environment variable in Railway with the value shown.</p>
+        <div class="input-row">
+          <div style="flex:1">
+            <label for="new-pwd">New Password</label>
+            <input type="text" id="new-pwd" placeholder="Enter new password"/>
+          </div>
+          <button class="btn-save" onclick="changePassword()">Save</button>
+        </div>
+        <div class="success-note" id="pwd-note" style="display:none"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- USER MESSAGES MODAL -->
+<div class="modal-overlay" id="user-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-title">User Messages</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body">Loading…</div>
+  </div>
+</div>
+
+<script>
+let adminToken = sessionStorage.getItem('bcm_admin_token') || null;
+let statsCache = null;
+let allUsers = [];
+
+if (adminToken) showApp();
+
+// ── AUTH ──
+async function doLogin() {
+  const pwd = document.getElementById('pwd').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-err');
+  btn.disabled = true; err.textContent = '';
+  try {
+    const res = await fetch('/api/admin/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ password: pwd }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Wrong password');
+    adminToken = data.token;
+    sessionStorage.setItem('bcm_admin_token', adminToken);
+    showApp();
+  } catch(e) { err.textContent = e.message; }
+  btn.disabled = false;
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const p = document.getElementById('pwd');
+  if (p) p.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+});
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  loadStats();
+}
+
+function doLogout() {
+  adminToken = null;
+  sessionStorage.removeItem('bcm_admin_token');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('pwd').value = '';
+}
+
+// ── NAVIGATION ──
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+}
+
+// ── LOAD STATS ──
+async function loadStats() {
+  try {
+    const res = await fetch('/api/admin/stats', { headers: { 'Authorization': 'Bearer ' + adminToken } });
+    if (res.status === 401) { doLogout(); return; }
+    const data = await res.json();
+    statsCache = data;
+    allUsers = data.users || [];
+    renderAll(data);
+    document.getElementById('users-upd').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch(e) { console.error(e); }
+}
+
+function renderAll(d) {
+  // Overview stats
+  set('ov-users', d.total_users);
+  set('ov-messages', d.total_messages);
+  set('ov-active', d.active_messages);
+  set('ov-redeemed', d.total_redemptions);
+  set('ov-banned', d.banned_users);
+  set('ov-failed', d.failed_logins);
+
+  // Message stats
+  set('msg-total', d.total_messages);
+  set('msg-active', d.active_messages);
+  set('msg-redeemed', d.total_redemptions);
+  set('msg-expired', d.expired_unredeemed);
+  set('msg-text', d.message_types?.text || 0);
+  set('msg-image', d.message_types?.image || 0);
+  set('msg-video', d.message_types?.video || 0);
+
+  // Security
+  set('sec-failed', d.failed_logins);
+  renderFailedLogins(d.recent_failed_logins || []);
+
+  // Platform status
+  const offline = d.platform_offline;
+  const tog = document.getElementById('platform-toggle');
+  const stog = document.getElementById('settings-platform-toggle');
+  if (tog) tog.checked = offline;
+  if (stog) stog.checked = offline;
+  updatePlatformUI(offline);
+
+  // Charts
+  renderBarChart('chart-signups', d.signups_per_day, '#7c3aed');
+  renderBarChart('chart-signups2', d.signups_per_day, '#7c3aed');
+  renderBarChart('chart-redemptions', d.redemptions_per_day, '#ef4444');
+  renderDonut(d.message_types || {});
+
+  // Users table
+  renderUsers(allUsers);
+}
+
+function set(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val ?? '—';
+}
+
+// ── PLATFORM TOGGLE ──
+async function togglePlatform() {
+  const offline = document.getElementById('platform-toggle').checked;
+  await setPlatformState(offline);
+}
+async function togglePlatformSettings() {
+  const offline = document.getElementById('settings-platform-toggle').checked;
+  await setPlatformState(offline);
+  // sync both toggles
+  document.getElementById('platform-toggle').checked = offline;
+  updatePlatformUI(offline);
+}
+async function setPlatformState(offline) {
+  await fetch('/api/admin/platform', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+    body: JSON.stringify({ offline })
+  });
+  updatePlatformUI(offline);
+  document.getElementById('settings-platform-toggle').checked = offline;
+  document.getElementById('platform-toggle').checked = offline;
+}
+function updatePlatformUI(offline) {
+  const label = document.getElementById('platform-toggle-label');
+  const text = document.getElementById('platform-status-text');
+  const note = document.getElementById('settings-platform-note');
+  if (label) label.textContent = offline ? 'Offline' : 'Online';
+  if (text) text.textContent = offline ? '⛔ Platform is OFFLINE — users cannot access.' : '✅ Platform is online and accepting users.';
+  if (note) note.style.display = offline ? 'block' : 'none';
+}
+
+// ── USERS TABLE ──
+function renderUsers(users) {
+  const tbody = document.getElementById('users-tbody');
+  document.getElementById('user-count').textContent = users.length;
+  if (!users.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No users yet</td></tr>'; return; }
+  tbody.innerHTML = users.map((u, i) => {
+    const status = u.banned ? '<span class="tag tag-red">Banned</span>' :
+                   u.offline ? '<span class="tag tag-yellow">Offline</span>' :
+                   '<span class="tag tag-green">Active</span>';
+    const banBtn = u.banned
+      ? `<button class="btn-sm btn-unban" onclick="unbanUser('${u._id}')">Unban</button>`
+      : `<button class="btn-sm btn-ban" onclick="banUser('${u._id}')">Ban</button>`;
+    const offBtn = u.offline
+      ? `<button class="btn-sm btn-online" onclick="setUserOffline('${u._id}',false)">Set Online</button>`
+      : `<button class="btn-sm btn-offline" onclick="setUserOffline('${u._id}',true)">Set Offline</button>`;
+    return `<tr>
+      <td class="mono">${i+1}</td>
+      <td><span class="mono" style="color:var(--accent2)">${u.login_id}</span></td>
+      <td class="mono">${fmtDate(u.created_at)}</td>
+      <td>${status}</td>
+      <td><div class="action-btns">
+        <button class="btn-sm btn-view" onclick="viewUserMessages('${u._id}','${u.login_id}')">Messages</button>
+        ${banBtn}
+        ${offBtn}
+        <button class="btn-sm btn-delete" onclick="deleteUser('${u._id}','${u.login_id}')">Delete</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterUsers(q) {
+  const filtered = allUsers.filter(u => u.login_id.toLowerCase().includes(q.toLowerCase()));
+  renderUsers(filtered);
+}
+
+// ── USER ACTIONS ──
+async function banUser(id) {
+  if (!confirm('Ban this user?')) return;
+  await fetch(`/api/admin/user/${id}/ban`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + adminToken } });
+  loadStats();
+}
+async function unbanUser(id) {
+  await fetch(`/api/admin/user/${id}/unban`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + adminToken } });
+  loadStats();
+}
+async function setUserOffline(id, offline) {
+  await fetch(`/api/admin/user/${id}/offline`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+    body: JSON.stringify({ offline })
+  });
+  loadStats();
+}
+async function deleteUser(id, login_id) {
+  if (!confirm(`Delete user "${login_id}" and all their messages? This cannot be undone.`)) return;
+  await fetch(`/api/admin/user/${id}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + adminToken } });
+  loadStats();
+}
+
+// ── VIEW USER MESSAGES ──
+async function viewUserMessages(id, login_id) {
+  document.getElementById('modal-title').textContent = login_id + ' — Messages';
+  document.getElementById('modal-body').textContent = 'Loading…';
+  document.getElementById('user-modal').classList.add('open');
+  const res = await fetch(`/api/admin/user/${id}/messages`, { headers: { 'Authorization': 'Bearer ' + adminToken } });
+  const msgs = await res.json();
+  if (!msgs.length) { document.getElementById('modal-body').innerHTML = '<p style="color:var(--muted)">No messages yet.</p>'; return; }
+  const now = Date.now();
+  document.getElementById('modal-body').innerHTML = msgs.map(m => {
+    const expired = m.expiry_at && m.expiry_at < now;
+    const status = m.redeemed ? '<span class="tag tag-red">Redeemed</span>' :
+                   expired ? '<span class="tag tag-muted">Expired</span>' :
+                   '<span class="tag tag-green">Active</span>';
+    return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.85rem 1rem;margin-bottom:.6rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap">
+      <div>
+        <span class="mono" style="color:var(--accent2)">${m.redemption_code}</span>
+        <span class="tag tag-blue" style="margin-left:.4rem">${m.message_type}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        ${status}
+        <span class="mono" style="color:var(--muted);font-size:.75rem">${fmtDate(m.created_at)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+function closeModal() { document.getElementById('user-modal').classList.remove('open'); }
+
+// ── FAILED LOGINS ──
+function renderFailedLogins(attempts) {
+  const tbody = document.getElementById('failed-tbody');
+  if (!attempts.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No failed attempts recorded</td></tr>'; return; }
+  tbody.innerHTML = attempts.map(a => `<tr>
+    <td><span class="mono" style="color:var(--accent2)">${a.login_id || '—'}</span></td>
+    <td><span class="tag tag-red">${a.reason || 'unknown'}</span></td>
+    <td class="mono">${a.ip || '—'}</td>
+    <td class="mono">${fmtDate(a.at)}</td>
+  </tr>`).join('');
+}
+
+// ── CHARTS ──
+function renderBarChart(elId, dataMap, color) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const days = last14Days();
+  const max = Math.max(1, ...days.map(d => dataMap[d] || 0));
+  el.innerHTML = days.map(d => {
+    const val = dataMap[d] || 0;
+    const pct = (val / max) * 100;
+    const label = d.slice(5); // MM-DD
+    return `<div class="bar-col">
+      <div class="bar" style="height:${pct}%;background:${color};opacity:.8" title="${d}: ${val}"></div>
+      <div class="bar-label">${label.replace('-','/')}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderDonut(types) {
+  const canvas = document.getElementById('donut-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const data = [
+    { label: 'Text', value: types.text || 0, color: '#3b82f6' },
+    { label: 'Image', value: types.image || 0, color: '#7c3aed' },
+    { label: 'Video', value: types.video || 0, color: '#10b981' },
+  ];
+  const total = data.reduce((s, d) => s + d.value, 0) || 1;
+  ctx.clearRect(0, 0, 90, 90);
+  let start = -Math.PI / 2;
+  data.forEach(d => {
+    const slice = (d.value / total) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(45, 45);
+    ctx.arc(45, 45, 40, start, start + slice);
+    ctx.closePath();
+    ctx.fillStyle = d.color;
+    ctx.fill();
+    start += slice;
+  });
+  // hole
+  ctx.beginPath();
+  ctx.arc(45, 45, 25, 0, 2 * Math.PI);
+  ctx.fillStyle = '#111118';
+  ctx.fill();
+
+  document.getElementById('donut-legend').innerHTML = data.map(d =>
+    `<div class="legend-item"><div class="legend-dot" style="background:${d.color}"></div>${d.label}: ${d.value}</div>`
+  ).join('');
+}
+
+function last14Days() {
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    days.push(d.toISOString().slice(0, 10));
+  }
+  return days;
+}
+
+// ── SETTINGS ──
+async function changePassword() {
+  const pwd = document.getElementById('new-pwd').value;
+  const note = document.getElementById('pwd-note');
+  if (!pwd || pwd.length < 6) { note.style.display = 'block'; note.style.color = 'var(--red)'; note.textContent = 'Password must be at least 6 characters.'; return; }
+  const res = await fetch('/api/admin/change-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+    body: JSON.stringify({ new_password: pwd })
+  });
+  const data = await res.json();
+  note.style.display = 'block';
+  note.style.color = 'var(--green)';
+  note.textContent = '✓ Go to Railway → your service → Variables → set ADMIN_PASSWORD = ' + pwd;
+}
+
+// ── HELPERS ──
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) + ' ' +
+         d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+}
+</script>
+</body>
+</html>
