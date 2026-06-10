@@ -324,6 +324,57 @@ app.delete('/api/messages/:id', requireAuth, (req, res) => {
 // ── Health check ──────────────────────────────
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
+// ── Admin stats ───────────────────────────────
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Techman41?';
+
+app.post('/api/admin/login', (req, res) => {
+  const { password } = req.body;
+  if (password === ADMIN_PASSWORD) {
+    res.json({ success: true, token: Buffer.from('admin:' + ADMIN_PASSWORD).toString('base64') });
+  } else {
+    res.status(401).json({ error: 'Wrong password' });
+  }
+});
+
+function requireAdmin(req, res, next) {
+  const header = req.headers['authorization'] || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  if (!token) return res.status(401).json({ error: 'Not authenticated' });
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf8');
+    if (decoded === 'admin:' + ADMIN_PASSWORD) return next();
+  } catch {}
+  res.status(401).json({ error: 'Invalid token' });
+}
+
+app.get('/api/admin/stats', requireAdmin, (req, res) => {
+  usersDb.count({}, (err, totalUsers) => {
+    messagesDb.count({}, (err2, totalMessages) => {
+      messagesDb.count({ redeemed: true }, (err3, totalRedemptions) => {
+        messagesDb.count({ redeemed: false }, (err4, activeMessages) => {
+          usersDb.find({}).sort({ created_at: -1 }).limit(20).exec((err5, recentUsers) => {
+            res.json({
+              total_users: totalUsers || 0,
+              total_messages: totalMessages || 0,
+              total_redemptions: totalRedemptions || 0,
+              active_messages: activeMessages || 0,
+              recent_users: (recentUsers || []).map(u => ({
+                login_id: u.login_id,
+                created_at: u.created_at,
+              })),
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+// ── Admin page ────────────────────────────────
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
 // ── 404 fallback (SPA) ────────────────────────
 app.get('/*splat', (req, res) => {
   const indexPath = path.join(__dirname, 'public', 'index.html');
