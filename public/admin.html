@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BCM Admin</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --border: #1e1e2e;
+      --accent: #7c3aed;
+      --accent2: #a78bfa;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --mono: 'Space Mono', monospace;
+      --sans: 'Space Grotesk', sans-serif;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── LOGIN ── */
+    #login-screen {
+      width: 100%;
+      max-width: 400px;
+      padding: 2rem;
+    }
+
+    .login-logo {
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      color: var(--accent2);
+      letter-spacing: 0.15em;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .login-title {
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .login-sub {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 2rem;
+    }
+
+    .login-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+
+    input[type="password"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 1rem;
+      padding: 0.75rem 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="password"]:focus { border-color: var(--accent); }
+
+    .btn {
+      width: 100%;
+      margin-top: 1.25rem;
+      padding: 0.8rem;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error-msg {
+      margin-top: 0.75rem;
+      color: var(--red);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    /* ── DASHBOARD ── */
+    #dashboard-screen {
+      display: none;
+      width: 100%;
+      max-width: 900px;
+      padding: 2rem;
+    }
+
+    .dash-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+
+    .dash-logo {
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      color: var(--accent2);
+      letter-spacing: 0.15em;
+    }
+
+    .dash-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .logout-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 0.8rem;
+      padding: 0.4rem 0.9rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+
+    .stat-card.users::before { background: var(--accent); }
+    .stat-card.messages::before { background: var(--green); }
+    .stat-card.active::before { background: var(--yellow); }
+    .stat-card.redeemed::before { background: var(--red); }
+
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .stat-value {
+      font-family: var(--mono);
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .stat-card.users .stat-value { color: var(--accent2); }
+    .stat-card.messages .stat-value { color: var(--green); }
+    .stat-card.active .stat-value { color: var(--yellow); }
+    .stat-card.redeemed .stat-value { color: var(--red); }
+
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .users-table {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead { background: #0d0d14; }
+
+    th {
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 0.85rem 1.25rem;
+      font-size: 0.9rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    tr:hover td { background: rgba(124,58,237,0.04); }
+
+    .user-id {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      color: var(--accent2);
+    }
+
+    .date-val {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .refresh-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .refresh-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--accent2);
+      font-family: var(--sans);
+      font-size: 0.8rem;
+      padding: 0.4rem 0.9rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .refresh-btn:hover { border-color: var(--accent); }
+
+    .last-updated {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .empty-row td { text-align: center; color: var(--muted); padding: 2rem; }
+
+    @media (max-width: 600px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .dash-title { font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div id="login-screen">
+    <div class="login-logo">BCM</div>
+    <h1 class="login-title">Admin Dashboard</h1>
+    <p class="login-sub">Enter your admin password to continue</p>
+    <div class="login-box">
+      <label for="pwd">Password</label>
+      <input type="password" id="pwd" placeholder="••••••••••" autofocus />
+      <button class="btn" id="login-btn" onclick="doLogin()">Sign in</button>
+      <div class="error-msg" id="login-err"></div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard-screen">
+    <div class="dash-header">
+      <div>
+        <div class="dash-logo">BCM / ADMIN</div>
+        <div class="dash-title">Platform Overview</div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">Sign out</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card users">
+        <div class="stat-label">Total Users</div>
+        <div class="stat-value" id="s-users">—</div>
+      </div>
+      <div class="stat-card messages">
+        <div class="stat-label">Total Messages</div>
+        <div class="stat-value" id="s-messages">—</div>
+      </div>
+      <div class="stat-card active">
+        <div class="stat-label">Active Messages</div>
+        <div class="stat-value" id="s-active">—</div>
+      </div>
+      <div class="stat-card redeemed">
+        <div class="stat-label">Redemptions</div>
+        <div class="stat-value" id="s-redeemed">—</div>
+      </div>
+    </div>
+
+    <div class="refresh-row" style="margin-bottom:0.75rem;">
+      <div class="section-title" style="margin:0;">Recent Signups (last 20)</div>
+      <div style="display:flex;gap:0.75rem;align-items:center;">
+        <span class="last-updated" id="last-updated"></span>
+        <button class="refresh-btn" onclick="loadStats()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <div class="users-table">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Login ID</th>
+            <th>Signed Up</th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody">
+          <tr class="empty-row"><td colspan="3">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let adminToken = sessionStorage.getItem('bcm_admin_token') || null;
+
+    if (adminToken) showDashboard();
+
+    async function doLogin() {
+      const pwd = document.getElementById('pwd').value;
+      const btn = document.getElementById('login-btn');
+      const err = document.getElementById('login-err');
+      btn.disabled = true;
+      err.textContent = '';
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pwd }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Wrong password');
+        adminToken = data.token;
+        sessionStorage.setItem('bcm_admin_token', adminToken);
+        showDashboard();
+      } catch (e) {
+        err.textContent = e.message;
+      }
+      btn.disabled = false;
+    }
+
+    document.getElementById('pwd').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doLogin();
+    });
+
+    function showDashboard() {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('dashboard-screen').style.display = 'block';
+      document.body.style.alignItems = 'flex-start';
+      loadStats();
+    }
+
+    function doLogout() {
+      adminToken = null;
+      sessionStorage.removeItem('bcm_admin_token');
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('dashboard-screen').style.display = 'none';
+      document.body.style.alignItems = 'center';
+      document.getElementById('pwd').value = '';
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/admin/stats', {
+          headers: { 'Authorization': 'Bearer ' + adminToken },
+        });
+        if (res.status === 401) { doLogout(); return; }
+        const data = await res.json();
+
+        document.getElementById('s-users').textContent = data.total_users;
+        document.getElementById('s-messages').textContent = data.total_messages;
+        document.getElementById('s-active').textContent = data.active_messages;
+        document.getElementById('s-redeemed').textContent = data.total_redemptions;
+
+        const tbody = document.getElementById('users-tbody');
+        if (!data.recent_users || data.recent_users.length === 0) {
+          tbody.innerHTML = '<tr class="empty-row"><td colspan="3">No users yet</td></tr>';
+        } else {
+          tbody.innerHTML = data.recent_users.map((u, i) => `
+            <tr>
+              <td class="date-val">${i + 1}</td>
+              <td><span class="user-id">${u.login_id}</span></td>
+              <td class="date-val">${formatDate(u.created_at)}</td>
+            </tr>
+          `).join('');
+        }
+
+        document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+        + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    }
+  </script>
+</body>
+</html>
